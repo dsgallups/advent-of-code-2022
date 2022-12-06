@@ -1,7 +1,7 @@
 use std::io::prelude::*;
 use std::fs;
 
-
+#[allow(dead_code)]
 pub fn file_to_string(path: &str) -> String {
     let mut file: fs::File = fs::File::open(path)
         .expect("File at path");
@@ -14,6 +14,7 @@ pub fn file_to_string(path: &str) -> String {
     data
 }
 
+#[allow(dead_code)]
 pub fn string_to_strings<'a>(s: &'a str, delimeter: &'a str) -> Vec<&'a str> {
     let split = s.split(delimeter);
     let result: Vec<&str> = split.collect::<Vec<&str>>();
