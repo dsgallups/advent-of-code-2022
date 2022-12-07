@@ -28,6 +28,9 @@ impl<'a> Directory<'a> {
     pub fn get_sup(&self) -> usize {
         self.sup
     }
+    pub fn get_items(&self) -> &Vec<usize> {
+        &self.items
+    }
 
     pub fn find(&self, arr: &Vec<ItemType>, name: &str) -> usize {
         
@@ -95,8 +98,71 @@ enum ItemType<'a> {
     }
 }*/
 
+fn get_size(root_dir: &Vec<ItemType>, current_item: &ItemType, cur_item_i: usize, mut dir_sizes: &mut Vec<u32>) -> u32 {
+
+    match current_item {
+        ItemType::Directory(dir) => {
+            let items = dir.get_items();
+            let mut sum: u32 = 0;
+            for i in items {
+                sum += get_size(root_dir, &root_dir[*i], *i, &mut dir_sizes);
+            }
+            //let new_vec = (cur_item_i, sum);
+            dir_sizes.push(sum);
+
+            return sum;
+        },
+        ItemType::File(file) => {
+            return file.get_size();
+        },
+        _ => {
+            panic!("Empty Itemtype passed");
+        }
+    }
+
+}
+
+fn find_dir_size_sum(dir: &Vec<ItemType>, dir_size: u32) -> u32 {
+
+    //start with the root
+    let root = &dir[0];
+    if let ItemType::Directory(ref direc) = root {
+        //now we get the dir object. 
+
+        let items = direc.get_items();
+        let mut dir_sizes: Vec<u32> = Vec::new();
+
+        for i in items {
+            //println!("hello {}", i);
+
+            let dir_size = get_size(dir, &dir[*i], *i, &mut dir_sizes);
+            //println!("{} size: {}", i, dir_size);
+
+        }
+
+        println!("{:?}", dir_sizes);
+        /*
+        let mut sum: u32 = 0;
+        for d in dir_sizes {
+            if d.1 <= dir_size {
+                sum += d.1;
+            }
+        }*/
+        let mut sum: u32 = 0;
+
+        dir_sizes.sort();
+
+        for i in 0..dir_sizes.len() {
+            
+        }
+
+        return sum;
+    }
+    0
+}
+
 fn main() {
-    let file:String = helper::file_to_string("src/input-ex");
+    let file:String = helper::file_to_string("src/input-raw");
 
     //let s = file.trim().split("").collect::<Vec<&str>>();
 
@@ -115,18 +181,43 @@ fn main() {
 
     let mut cur_dir_i = all.len() - 1;
     //let cur_dir = &all[0];
-    for i in 1..commands.len() {
+    let mut i = 1;
+    loop {
+        let mut output_break = false;
         let line_output = commands[i].split(" ").collect::<Vec<&str>>();
+        println!("------------------------------------------------");
+        println!("i = {}", i);
+        println!("Command: {}", commands[i]);
+        println!("cur_dir_i = {}", &cur_dir_i);
+        /*if i >= 3 {
+            if let ItemType::Directory(ref my_dir) = all[1] {
+                println!("A's sup = {} ", my_dir.get_sup());
+            }
+        }*/
+        
         if line_output[0].eq("$") {
             let command = line_output[1];
             if command.eq("ls") {
                 let mut j = i + 1;
                 loop {
-                    let output = commands[j].split(" ").collect::<Vec<&str>>();
-
-                    if commands[j].contains("$") || output[0].contains("$") {
+                    println!("------------------------------------------------");
+                    println!("j = {}", j);
+                    /*if j >= 3 {
+                        if let ItemType::Directory(ref my_dir) = all[1] {
+                            println!("A's sup = {} ", my_dir.get_sup());
+                        }
+                    }*/
+                    
+                    //println!("Command is: {}", )
+                    if j == commands.len() || commands[j].contains("$") {
+                        i = j;
+                        output_break = true;
+                        println!("Breaking!!");
                         break;
                     }
+                    let output = commands[j].split(" ").collect::<Vec<&str>>();
+                    println!("Command: {}", commands[j]);
+                    println!("cur_dir_i = {}", &cur_dir_i);
 
                     if output[0].eq("dir") {
                         //current_directorypush((output[1], &Vec::new()));
@@ -151,16 +242,19 @@ fn main() {
                         //cur_dir_i = all.len() - 1;
                         let old_i = cur_dir_i;
                         let new_i = all.len() - 1;
+                        println!("new entry = {}", &new_i);
 
                         if let ItemType::Directory(ref mut my_dir) = all[cur_dir_i] {
                             my_dir.push(new_i);
                         }
 
-                        cur_dir_i = new_i;
-
+                        //cur_dir_i = new_i;
+                        
                         //give new directory a super
-                        if let ItemType::Directory(ref mut my_dir) = all[cur_dir_i] {
+                        if let ItemType::Directory(ref mut my_dir) = all[new_i] {
                             my_dir.set_sup(old_i);
+
+                            println!("super directory = {}", &my_dir.get_sup());
                         }
                         
                         
@@ -178,6 +272,7 @@ fn main() {
 
                         all.push(new_file);
                         let new_i = all.len() - 1;
+                        println!("new entry = {}", &new_i);
 
                         if let ItemType::Directory(ref mut my_dir) = all[cur_dir_i] {
                             my_dir.push(new_i);
@@ -186,10 +281,13 @@ fn main() {
                     }
                     
                     j += 1;
-                }
-            } else if command.eq("cd") {
+                } //inner loop
+            } else if line_output[1].eq("cd") {
+                //println!("COMMAND IS CD---------");
                 //check if it's a name or a ..
                 if line_output[2].eq("..") {
+
+                    
                     let mut sup_i = UNDET_REF;
                     
                     if let ItemType::Directory(ref my_dir) = all[cur_dir_i] {
@@ -198,160 +296,37 @@ fn main() {
 
                     cur_dir_i = sup_i;
 
+                    println!("new cur_dir_i = {}", &cur_dir_i);
+
                 } else {
+                    //println!("IN HERE-----------------------------");
                     let mut next_i = UNDET_REF;
                     //find the directory where the next dir is stored
                     if let ItemType::Directory(ref my_dir) = &all[cur_dir_i] {
                         next_i = my_dir.find(&all, line_output[2]);
                     }
 
-                    cur_dir_i = next_i
+                    cur_dir_i = next_i;
+                    println!("new cur_dir_i = {}", &cur_dir_i);
                 }
             } else {
+                println!("line_output = {}", line_output[0]);
                 panic!("INVALID COMMAND");
             }
+        } //if command is $
+
+        if i == commands.len() {
+            break;
         }
-    }
-
-    //
-        
-
-    
-    //root.into().
-    /*if let ItemType::Directory(ref my_root) = root {
-        let name = my_root.get_name();
-        println!("Root name: {}", name);
-
-    }
-
-    let current_directory = &mut root;*/
-    /*
-    for i in 1..commands.len() {
-        let line_output = commands[i].split(" ").collect::<Vec<&str>>();
-        if line_output[0].eq("$") {
-            let command = line_output[1];
-            if command.eq("ls") {
-                let mut j = i + 1;
-                loop {
-                    let output = commands[j].split(" ").collect::<Vec<&str>>();
-
-                    if commands[j].contains("$") || output[0].contains("$") {
-                        break;
-                    }
-
-                    if output[0].eq("dir") {
-                        //current_directorypush((output[1], &Vec::new()));
-                        /*current_directory.push(ItemType::Directory(
-                                Box::new(
-                                    Directory::new(output[1])
-                                )
-                            )
-                        );*/
-                        let new_dir = ItemType::Directory(
-                            Box::new(
-                                Directory::new(
-                                    output[1]
-                                )
-                            )
-                        );
-                        push_item_to_dir(current_directory, new_dir);
-                        
-                    } else {
-                    
-
-                        let new_file = ItemType::File(
-                            Box::new(
-                                File::new(
-                                    output[1],
-                                    output[0].parse::<u32>().unwrap()
-                                )
-                            )
-                        );
-                        push_item_to_dir(current_directory, new_file);
-                    
-                    }
-                    
-                    j += 1;
-                }
-            } else if command.eq("cd") {
-                //check if it's a name or a ..
-                if line_output[2].eq("..") {
-                    //current_directory = current_directory.sup;
-                } else {
-                    
-
-                }
-
-            }
+        if output_break == true {
+            output_break = false;
+        } else {
+            i += 1;
         }
-    }*/
-    
+        println!("end outer loop. directory complete.");
+    } //outer loop
 
-    /*let mut root_dir = Type {
-        name: "/",
-        i_type: ItemType::Directory,
-        dir: Vec::new(),
-        sup: None,
-        size: 0
-    };
-    let current_directory = &mut root_dir;
-
-    for i in 1..commands.len() {
-        let line_output = commands[i].split(" ").collect::<Vec<&str>>();
-        //println!("{}", line_output[0]);
-        if line_output[0].eq("$") {
-            //println!("true");
-
-            let command = line_output[1];
-            if command.eq("ls") {
-                let mut j = i + 1;
-                loop {              
-
-
-                    let output = commands[j].split(" ").collect::<Vec<&str>>();
-
-                    if commands[j].contains("$") || output[0].contains("$") {
-                        break;
-                    }
-
-                    if output[0].eq("dir") {
-                        //current_directorypush((output[1], &Vec::new()));
-                        current_directory.dir.push(
-                            Type {
-                                name: output[1],
-                                i_type: ItemType::Directory,
-                                dir: Vec::new(),
-                                sup: {Some(&mut current_directory)},
-                                size: 0
-                            }
-                        )
-                    } else {
-                        current_directory.dir.push(
-                            Type {
-                                name: output[1],
-                                i_type: ItemType::File,
-                                dir: Vec::new(),
-                                sup: Some(current_directory),
-                                size: output[0].parse::<u32>().unwrap()
-                            }
-                        )
-                    }
-                    
-                    j += 1;
-
-                }
-
-
-            } else if command.eq("cd") {
-
-                //current_directory = 
-
-
-            } else {
-                panic!("INVALID COMMAND!");
-            }
-        }
-
-    }*/
- 
+    //now just find the biggest directory
+    let res = find_dir_size_sum(&mut all, 100000);
+    println!("Sum: {}", &res);
 }
