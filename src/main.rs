@@ -122,6 +122,56 @@ fn get_size(root_dir: &Vec<ItemType>, current_item: &ItemType, cur_item_i: usize
 
 }
 
+fn get_dir_size(root_dir: &Vec<ItemType>, current_item: &ItemType) -> u32 {
+
+    match current_item {
+        ItemType::Directory(dir) => {
+            let items = dir.get_items();
+            let mut sum: u32 = 0;
+            for i in items {
+                sum += get_dir_size(root_dir, &root_dir[*i]);
+            }
+            //let new_vec = (cur_item_i, sum);
+
+
+            return sum;
+        },
+        ItemType::File(file) => {
+            return file.get_size();
+        },
+        _ => {
+            panic!("Empty Itemtype passed");
+        }
+    }
+
+}
+
+fn get_dir_on_min_size(dir: &Vec<ItemType>, min_dir_size: u32) -> u32 {
+
+    //start with the root
+    let root = &dir[0];
+    if let ItemType::Directory(ref direc) = root {
+        //now we get the dir object. 
+
+        let items = direc.get_items();
+        let mut dir_sizes: Vec<u32> = Vec::new();
+
+        for i in items {
+            get_size(dir, &dir[*i], *i, &mut dir_sizes);
+        }
+
+        dir_sizes.sort();
+
+        for i in 0..dir_sizes.len() {
+            
+            if dir_sizes[i] >= min_dir_size {
+                return dir_sizes[i];
+            }
+        }
+    }
+    0
+}
+
 fn find_dir_size_sum(dir: &Vec<ItemType>, dir_size: u32) -> u32 {
 
     //start with the root
@@ -133,27 +183,18 @@ fn find_dir_size_sum(dir: &Vec<ItemType>, dir_size: u32) -> u32 {
         let mut dir_sizes: Vec<u32> = Vec::new();
 
         for i in items {
-            //println!("hello {}", i);
-
-            let dir_size = get_size(dir, &dir[*i], *i, &mut dir_sizes);
-            //println!("{} size: {}", i, dir_size);
-
+            get_size(dir, &dir[*i], *i, &mut dir_sizes);
         }
 
-        println!("{:?}", dir_sizes);
-        /*
-        let mut sum: u32 = 0;
-        for d in dir_sizes {
-            if d.1 <= dir_size {
-                sum += d.1;
-            }
-        }*/
         let mut sum: u32 = 0;
 
         dir_sizes.sort();
 
         for i in 0..dir_sizes.len() {
             
+            if sum >= 30000000 {
+                return dir_sizes[i];
+            }
         }
 
         return sum;
@@ -329,4 +370,16 @@ fn main() {
     //now just find the biggest directory
     let res = find_dir_size_sum(&mut all, 100000);
     println!("Sum: {}", &res);
+    let root_size = get_dir_size(&all, &all[0]);
+
+    let free_space = 70000000 - root_size;
+    let to_free = 30000000 - free_space;
+
+    println!("Root Size: {}", &root_size);
+    println!("Free Space: {}", &free_space);
+    println!("To Free: {}", &to_free);
+
+    let get_free_dir = get_dir_on_min_size(&mut all, to_free);
+    println!("free dir: {}", &get_free_dir);
+    
 }
