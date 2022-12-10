@@ -26,7 +26,24 @@ fn get_t_pos(h: &(i32, i32), t: &(i32, i32)) -> (i32, i32) {
             return (h.0, h.1 - 1);
         }
     } else {
-        println!("H: {:?}; T: {:?}", h, t);
+        if h.0 > t.0 {
+            if h.1 < t.1 {
+                return (h.0-1, h.1+1);
+            }
+            if h.1 > t.1 {
+                return (h.0-1, h.1-1);
+            }
+
+        } else if h.0 < t.0 {
+            if h.1 < t.1 {
+                return (h.0+1, h.1+1);
+            }
+            if h.1 > t.1 {
+                return (h.0+1, h.1-1);
+            }
+
+        }
+        println!("Final---\n in front: {:?}; behind: {:?}", h, t);
         panic!("IMPOSSIBLE");
     }
 }
@@ -39,11 +56,18 @@ fn main() {
     let mut t_vis: HashSet<(i32, i32)> = HashSet::new();
 
     //set starting points for h and t
-    let mut h = (4, 0);
-    let mut t = (4, 0);
+    //let mut h = (4, 0);
+    //let mut t = (4, 0);
+    let mut s: Vec<(i32, i32)> = Vec::new();
+
+    for _ in 0..10 {
+        s.push((4, 0));
+    }
+
+    println!("s.len = {}", s.len());
 
     println!("START ---");
-    println!("H: {:?}; T: {:?}", h, t);
+    println!("H: {:?}; T: {:?}", s[0], s[9]);
 
     file.lines().for_each(|line| {
         let com = line.split(" ").collect::<Vec<&str>>();
@@ -51,35 +75,49 @@ fn main() {
         println!("COMMAND: {}", line);
 
         if com[0].eq("R") {
-            for _ in 0..com[1].parse::<u32>().unwrap() {
-                h = (h.0, h.1 + 1);
-                t = get_t_pos(&h, &t);
-                t_vis.insert(t);
-                println!("H: {:?}; T: {:?}", h, t);
+            for k in 0..com[1].parse::<u32>().unwrap() {
+                println!("LOOP {}", k);
+                s[0] = (s[0].0, s[0].1 + 1);
+                for i in 1..s.len() {
+                    s[i] = get_t_pos(&s[i-1], &s[i]);
+                }
+                //t = get_t_pos(&h, &t);
+                t_vis.insert(s[s.len()-1]);
+                println!("H: {:?}; T: {:?}", s[0], s[s.len()-1]);
             }
 
         } else if com[0].eq("U") {
-            for _ in 0..com[1].parse::<u32>().unwrap() {
-                h = (h.0 - 1, h.1);
-                t = get_t_pos(&h, &t);
-                t_vis.insert(t);
-                println!("H: {:?}; T: {:?}", h, t);
+            for k in 0..com[1].parse::<u32>().unwrap() {
+                println!("LOOP {}", k);
+                s[0] = (s[0].0 - 1, s[0].1);
+                for i in 1..s.len() {
+                    s[i] = get_t_pos(&s[i-1], &s[i]);
+                }
+                //t = get_t_pos(&h, &t);
+                t_vis.insert(s[s.len()-1]);
+                println!("H: {:?}; T: {:?}", s[0], s[s.len()-1]);
             }
 
         } else if com[0].eq("L") {
             for _ in 0..com[1].parse::<u32>().unwrap() {
-                h = (h.0, h.1 - 1);
-                t = get_t_pos(&h, &t);
-                t_vis.insert(t);
-                println!("H: {:?}; T: {:?}", h, t);
+                s[0] = (s[0].0, s[0].1 - 1);
+                for i in 1..s.len() {
+                    s[i] = get_t_pos(&s[i-1], &s[i]);
+                }
+                //t = get_t_pos(&h, &t);
+                t_vis.insert(s[s.len()-1]);
+                println!("H: {:?}; T: {:?}", s[0], s[s.len()-1]);
             }
 
         } else if com[0].eq("D") {
             for _ in 0..com[1].parse::<u32>().unwrap() {
-                h = (h.0 + 1, h.1);
-                t = get_t_pos(&h, &t);
-                t_vis.insert(t);
-                println!("H: {:?}; T: {:?}", h, t);
+                s[0] = (s[0].0 + 1, s[0].1);
+                for i in 1..s.len() {
+                    s[i] = get_t_pos(&s[i-1], &s[i]);
+                }
+                //t = get_t_pos(&h, &t);
+                t_vis.insert(s[s.len()-1]);
+                println!("H: {:?}; T: {:?}", s[0], s[s.len()-1]);
             }
 
         } else {
