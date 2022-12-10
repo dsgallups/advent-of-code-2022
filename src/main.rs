@@ -1,67 +1,104 @@
 mod helper;
-use std::collections::HashSet;
+use std::{collections::HashSet, hash::Hash};
 
 
+const GRID_WIDTH: i32 = 6;
+const GRID_HEIGHT: i32 = 5;
 
+fn get_t_pos(h: &(i32, i32), t: &(i32, i32)) -> (i32, i32) {
 
+    let i_dis = (h.0 - t.0).abs();
+    let j_dis = (h.1 - t.1).abs();
+    //println!("DISTANCE: ({}, {})", i_dis, j_dis);
 
-fn get_scenic_score(g: &Vec<Vec<i8>>, ci: usize, cj: usize) -> u32 {
-
-    //search upwards
-    let t_height = g[ci][cj];
-
-    let mut upwards: u32 = 0;
-    for i in (0..ci).rev() {
-
-        upwards += 1;
-
-        if g[i][cj] >= t_height {
-            break;
+    if i_dis <= 1 && j_dis <= 1 {return (t.0, t.1);}
+    if i_dis > j_dis {
+        if h.0 > t.0 {
+            return (h.0-1, h.1);
+        } else {
+            return (h.0+1, h.1);
         }
 
-    }
-
-    //search leftwards
-    let mut leftwards: u32 = 0;
-    for j in (0..cj).rev() {
-        leftwards += 1;
-
-        if g[ci][j] >= t_height {
-            break;
+    } else if j_dis > i_dis {
+        if h.1 < t.1 {
+            return (h.0, h.1 + 1);
+        } else {
+            return (h.0, h.1 - 1);
         }
+    } else {
+        println!("H: {:?}; T: {:?}", h, t);
+        panic!("IMPOSSIBLE");
     }
-
-    //search rightwards
-    let mut rightwards: u32 = 0;
-    for j in (cj + 1)..g[ci].len() {
-        rightwards += 1;
-
-        if g[ci][j] >= t_height {
-            break;
-        }
-    }
-
-    //search downards
-    let mut downwards: u32 = 0;
-    for i in (ci + 1)..g.len() {
-        
-        downwards += 1;
-        if g[i][cj] >= t_height {
-            break;
-        }
-    }
-
-
-    upwards * leftwards * rightwards * downwards
 }
-
 fn main() {
-    let mut grid: Vec<Vec<i8>> = Vec::new();
+
     
     let file:String = helper::file_to_string("src/input-raw");
 
-    
+    //create Hashset of points t has visited
+    let mut t_vis: HashSet<(i32, i32)> = HashSet::new();
+
+    //set starting points for h and t
+    let mut h = (4, 0);
+    let mut t = (4, 0);
+
+    println!("START ---");
+    println!("H: {:?}; T: {:?}", h, t);
+
     file.lines().for_each(|line| {
+        let com = line.split(" ").collect::<Vec<&str>>();
+
+        println!("COMMAND: {}", line);
+
+        if com[0].eq("R") {
+            for _ in 0..com[1].parse::<u32>().unwrap() {
+                h = (h.0, h.1 + 1);
+                t = get_t_pos(&h, &t);
+                t_vis.insert(t);
+                println!("H: {:?}; T: {:?}", h, t);
+            }
+
+        } else if com[0].eq("U") {
+            for _ in 0..com[1].parse::<u32>().unwrap() {
+                h = (h.0 - 1, h.1);
+                t = get_t_pos(&h, &t);
+                t_vis.insert(t);
+                println!("H: {:?}; T: {:?}", h, t);
+            }
+
+        } else if com[0].eq("L") {
+            for _ in 0..com[1].parse::<u32>().unwrap() {
+                h = (h.0, h.1 - 1);
+                t = get_t_pos(&h, &t);
+                t_vis.insert(t);
+                println!("H: {:?}; T: {:?}", h, t);
+            }
+
+        } else if com[0].eq("D") {
+            for _ in 0..com[1].parse::<u32>().unwrap() {
+                h = (h.0 + 1, h.1);
+                t = get_t_pos(&h, &t);
+                t_vis.insert(t);
+                println!("H: {:?}; T: {:?}", h, t);
+            }
+
+        } else {
+            panic!("Invalid Command!");
+        }
+        
+
+        /*if h.1 >= GRID_WIDTH || t.1 >= GRID_WIDTH || h.0 >= GRID_HEIGHT || t.0 >= GRID_HEIGHT {
+            panic!("Invalid position; H: {:?}; T: {:?}", h, t)
+        }*/
+    });
+
+
+    println!("T VISITED:");
+    println!("{:?}", &t_vis);
+    println!("Length: {}", &t_vis.len());
+    
+    /*file.lines().for_each(|line| {
+
 
 
         let vals = line
@@ -72,87 +109,8 @@ fn main() {
         grid.push(vals);
 
 
-    });
-
-    println!("{:?}", grid);
-
-    //let mut v_trees: HashSet<(usize, usize)> = HashSet::new();
-
-    let mut max_scenic_score: u32 = 0;
-    for i in 0..grid.len() {
-        for j in 0..grid.len() {
-            let scenic_score = get_scenic_score(&grid, i, j);
-            
-            max_scenic_score = if scenic_score > max_scenic_score { scenic_score } else { max_scenic_score };
-        }
-    }
-
-    println!("Max Score: {}", max_scenic_score);
-
-    /* PART 1
-
-    //from left
-
-    for i in 0..grid.len() {
-
-        let mut tallest_tree: i8 = -1;
-        for j in 0..grid[i].len() {
-            println!("(i, j) = ({}, {})", i, j);
-            if grid[i][j] > tallest_tree {
-                println!("inserted!");
-                v_trees.insert((i,j));
-                tallest_tree = grid[i][j];
-            }
-        }
-    }
-
-    //from right
-    for j in 0..grid.len() {
-
-        let mut tallest_tree: i8 = -1;
-        for i in (0..grid[j].len()).rev() {
-            //println!("(i, j) = ({}, {})", i, j);
-            if grid[i][j] > tallest_tree {
-                //println!("inserted!");
-                v_trees.insert((i,j));
-                tallest_tree = grid[i][j];
-            }
-        }
-    }
-
-    //from top
-    for j in 0..grid.len() {
-
-        let mut tallest_tree: i8 = -1;
-        for i in 0..grid[j].len() {
-            //println!("(i, j) = ({}, {})", i, j);
-            if grid[i][j] > tallest_tree {
-                //println!("inserted!");
-                v_trees.insert((i,j));
-                tallest_tree = grid[i][j];
-            }
-        }
-    }
+    });*/
 
 
-    //from bottom
-    for i in 0..grid.len() {
-        let mut tallest_tree: i8 = -1;
-        for j in (0..grid[i].len()).rev() {
-            //println!("(i, j) = ({}, {})", i, j);
-            if grid[i][j] > tallest_tree {
-                //println!("inserted!");
-                v_trees.insert((i,j));
-                tallest_tree = grid[i][j];
-            }
-        }
-    }
-    println!("{:?}", v_trees);
-    println!("{:?}", v_trees.len());
-
-    */
-
-
-    //Analyze from top bottom left right
 
 }
